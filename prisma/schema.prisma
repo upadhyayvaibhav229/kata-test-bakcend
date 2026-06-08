@@ -1,0 +1,86 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Form {
+  id           String         @id @default(cuid())
+  name         String
+  startDate    String         // stored as "YYYY-MM-DD" to match frontend
+  endDate      String
+  active       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  registrations Registration[]
+
+  @@map("forms")
+}
+
+model Registration {
+  id           String   @id @default(cuid())
+  formId       String
+  studentName  String
+  age          Int
+  phone        String
+  parentPhone  String
+  branch       String
+  belt         String   // BeltKey — e.g. "white", "yellow", "black"
+  kata1        String
+  kata2        String
+  kata3        String
+  registeredAt DateTime @default(now())
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@map("registrations")
+}
+
+// ─── Test module stubs (structure only, you fill in) ─────────────────────────
+
+model TestEvent {
+  id          String      @id @default(cuid())
+  name        String
+  date        String      // "YYYY-MM-DD"
+  venue       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  panels      TestPanel[]
+
+  @@map("test_events")
+}
+
+model TestPanel {
+  id          String      @id @default(cuid())
+  eventId     String
+  examiner    String      // examiner / judge name
+  belt        String      // belt level being tested
+
+  event       TestEvent   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  candidates  TestCandidate[]
+
+  @@map("test_panels")
+}
+
+model TestCandidate {
+  id          String      @id @default(cuid())
+  panelId     String
+  studentName String
+  branch      String
+  currentBelt String
+  targetBelt  String
+  score       Float?      // null until graded
+  passed      Boolean?    // null until graded
+  notes       String?
+
+  panel       TestPanel   @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@map("test_candidates")
+}
