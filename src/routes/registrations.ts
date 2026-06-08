@@ -9,25 +9,26 @@ const router = Router();
 
 // ── Validation schemas ─────────────────────────────────────────────────────────
 
-const createRegistrationSchema = z
-  .object({
-    formId:      z.string().min(1),
-    studentName: z.string().trim().min(2).max(100),
-    age:         z.number().int().min(4).max(80),
-    phone:       z.string().trim().min(7).max(20),
-    parentPhone: z.string().trim().min(7).max(20),
-    branch:      z.string().min(1),
-    belt:        z.enum(BELT_KEYS),
-    kata1:       z.string().min(1),
-    kata2:       z.string().min(1),
-    kata3:       z.string().min(1),
-  })
-  // All three katas must be unique
+// ── Validation schemas ─────────────────────────────────────────────────────────
+
+const registrationBaseSchema = z.object({
+  formId: z.string().min(1),
+  studentName: z.string().trim().min(2).max(100),
+  age: z.number().int().min(4).max(80),
+  phone: z.string().trim().min(7).max(20),
+  parentPhone: z.string().trim().min(7).max(20),
+  branch: z.string().min(1),
+  belt: z.enum(BELT_KEYS),
+  kata1: z.string().min(1),
+  kata2: z.string().min(1),
+  kata3: z.string().min(1),
+});
+
+const createRegistrationSchema = registrationBaseSchema
   .refine((d) => new Set([d.kata1, d.kata2, d.kata3]).size === 3, {
     message: "All three katas must be different",
     path: ["kata3"],
   })
-  // Katas must be valid for the chosen belt
   .refine(
     (d) => {
       const allowed = new Set(availableKatasFor(d.belt as BeltKey));
@@ -38,12 +39,14 @@ const createRegistrationSchema = z
       path: ["kata1"],
     }
   )
-  // Branch must be a known branch
   .refine((d) => (BRANCHES as readonly string[]).includes(d.branch), {
     message: "Unknown branch",
     path: ["branch"],
   });
 
+const updateRegistrationSchema = registrationBaseSchema
+  .omit({ formId: true })
+  .partial();
 const listQuerySchema = z.object({
   page:     z.coerce.number().int().min(1).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(10),
@@ -169,7 +172,6 @@ router.post(
 
 // ── PATCH /api/registrations/:id ─────────────────────────────────────────────
 // Partial update — useful for admin corrections
-const updateRegistrationSchema = createRegistrationSchema.partial().omit({ formId: true });
 
 router.patch(
   "/:id",
