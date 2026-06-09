@@ -1,32 +1,30 @@
 {
-  "name": "karate-backend",
+  "name": "kata-tournament-backend",
   "version": "1.0.0",
-  "description": "Shotokan Karate Championship — REST API",
+  "description": "Kata Tournament Management Backend",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio",
-    "db:seed": "ts-node prisma/seed.ts"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "express-validator": "^7.1.0",
-    "helmet": "^7.1.0",
-    "morgan": "^1.10.0",
+    "multer": "^2.1.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/morgan": "^1.9.9",
-    "@types/node": "^20.14.0",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^20.14.2",
     "prisma": "^5.14.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"

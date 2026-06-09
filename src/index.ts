@@ -1,51 +1,35 @@
-// src/index.ts
 import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import morgan from "morgan";
+import { app } from "./app";
+import prisma from "./db/prisma";
 
-import formsRouter         from "./routes/forms";
-import registrationsRouter from "./routes/registrations";
-import testsRouter         from "./routes/tests";
-import { errorHandler }    from "./middleware/errorHandler";
+const PORT = process.env.PORT || 8000;
 
-const app = express();
+const startServer = async () => {
+  try {
+    // Verify DB connection before starting
+    await prisma.$connect();
+    console.log("✅ Database connected");
 
-// ── Global middleware ─────────────────────────────────────────────────────────
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📋 API prefix: /api/v1`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    await prisma.$disconnect();
+    process.exit(1);
+  }
+};
 
-app.use(helmet());
-app.use(
-  cors({
-    // Update origin to your frontend URL in production
-    origin: process.env.FRONTEND_URL ?? "*",
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  })
-);
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
-app.use(express.json());
+// Graceful shutdown
+const shutdown = async (signal: string) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  await prisma.$disconnect();
+  process.exit(0);
+};
 
-// ── Health check ──────────────────────────────────────────────────────────────
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
 
-app.get("/health", (_req, res) => res.json({ status: "ok", ts: new Date() }));
-
-// ── Routes ────────────────────────────────────────────────────────────────────
-
-app.use("/api/forms",         formsRouter);
-app.use("/api/registrations", registrationsRouter);
-app.use("/api/tests",         testsRouter);
-
-// 404 catch-all
-app.use((_req, res) => res.status(404).json({ error: "Route not found" }));
-
-// Central error handler (must be last)
-app.use(errorHandler);
-
-// ── Start ─────────────────────────────────────────────────────────────────────
-
-const PORT = Number(process.env.PORT) || 4000;
-app.listen(PORT, () => {
-  console.log(`🥋 Karate API running on http://localhost:${PORT}`);
-});
-
-export default app;
+startServer();

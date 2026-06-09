@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Medal {
+  GOLD
+  SILVER
+  BRONZE
+  PARTICIPATION
+}
+model Registration {
+  id String @id @default(cuid())
+
+  studentName String
+  age Int
+
+  branch String
+  belt String
+
+  registrationOrder Int?
+
+  testCompleted Boolean @default(false)
+
+  phone String?
+  parentPhone String?
+
+  kata1 String?
+  kata2 String?
+  kata3 String?
+
+  extraData Json?
+
+  score KataScore?
+  // testCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KataScore {
+  id String @id @default(cuid())
+
+  registrationId String @unique
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  kata1Name String
+  kata1Marks Float?
+
+  kata2Name String
+  kata2Marks Float?
+
+  kata3Name String
+  kata3Marks Float?
+
+  average Float?
+  percentage Float?
+
+  medal String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
