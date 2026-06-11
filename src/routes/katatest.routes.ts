@@ -7,6 +7,7 @@ import {
   getBelts,
   getBranches,
   getRegistrationById,
+  getRegistrations,
   importExcel,
   updateregisterdStudent,
 } from "../controllers/katatest.controller";
@@ -24,6 +25,9 @@ router.post("/import", upload.single("file"), importExcel);
 router.get("/download-temp", downloadTemplate);
 
 router.get("/belts", getBelts);
+
+router.get("/",  getRegistrations);
+
 
 router.post("/", createRegistration);
 

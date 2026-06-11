@@ -13,20 +13,21 @@ enum Medal {
   BRONZE
   PARTICIPATION
 }
+
 model Registration {
   id String @id @default(cuid())
 
   studentName String
-  age Int
+  age         Int
 
   branch String
-  belt String
+  belt   String
 
   registrationOrder Int?
 
   testCompleted Boolean @default(false)
 
-  phone String?
+  phone       String?
   parentPhone String?
 
   kata1 String?
@@ -40,6 +41,8 @@ model Registration {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("registrations")
 }
 
 model KataScore {
@@ -49,20 +52,22 @@ model KataScore {
 
   registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 
-  kata1Name String
+  kata1Name  String
   kata1Marks Float?
 
-  kata2Name String
+  kata2Name  String
   kata2Marks Float?
 
-  kata3Name String
+  kata3Name  String
   kata3Marks Float?
 
-  average Float?
+  average    Float?
   percentage Float?
 
   medal String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("kata_scores")
 }

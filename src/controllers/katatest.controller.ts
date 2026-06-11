@@ -13,9 +13,7 @@ const ALLOWED_EXCEL_TYPES = [
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-function getMedal(
-  percentage: number
-) {
+function getMedal(percentage: number) {
   if (percentage >= 85) return "Gold";
 
   if (percentage >= 75) return "Silver";
@@ -129,7 +127,10 @@ export const importExcel = asyncHandler(
 );
 
 export const downloadTemplate = (req: Request, res: Response) => {
-  const templateData = [
+  const workbook = XLSX.utils.book_new();
+
+  // Empty row so headers get created with correct keys
+  const worksheet = XLSX.utils.json_to_sheet([
     {
       "Student Name": "",
       Age: "",
@@ -141,24 +142,32 @@ export const downloadTemplate = (req: Request, res: Response) => {
       "Kata 2": "",
       "Kata 3": "",
     },
+  ]);
+
+  // ── Column widths ──────────────────────────────────────────────────────────
+  worksheet["!cols"] = [
+    { wch: 22 }, // Student Name
+    { wch: 8 }, // Age
+    { wch: 18 }, // Branch
+    { wch: 16 }, // Belt
+    { wch: 16 }, // Phone
+    { wch: 18 }, // Parent Phone
+    { wch: 20 }, // Kata 1
+    { wch: 20 }, // Kata 2
+    { wch: 20 }, // Kata 3
   ];
 
-  const workbook = XLSX.utils.book_new();
-
-  const worksheet = XLSX.utils.json_to_sheet(templateData);
+  // ── Freeze header row ──────────────────────────────────────────────────────
+  worksheet["!freeze"] = { xSplit: 0, ySplit: 1 };
 
   XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
 
-  const buffer = XLSX.write(workbook, {
-    type: "buffer",
-    bookType: "xlsx",
-  });
+  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
   res.setHeader(
     "Content-Disposition",
     'attachment; filename="registration-template.xlsx"',
   );
-
   res.setHeader(
     "Content-Type",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -166,6 +175,7 @@ export const downloadTemplate = (req: Request, res: Response) => {
 
   return res.send(buffer);
 };
+
 
 export const getBranches = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
@@ -330,110 +340,78 @@ export const createRegistration = asyncHandler(async (req, res) => {
     );
 });
 
+export const completeKataTest = asyncHandler(
+  async (req: Request, res: Response): Promise<Response> => {
+    const { registrationId, kata1Marks, kata2Marks, kata3Marks } = req.body;
 
+    const registration = await prisma.registration.findUnique({
+      where: {
+        id: registrationId,
+      },
+    });
 
+    if (!registration) {
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Student not found");
+    }
 
-export const completeKataTest =
-  asyncHandler(
-    async (
-      req: Request,
-      res: Response
-    ): Promise<Response> => {
-      const {
+    const average =
+      (Number(kata1Marks) + Number(kata2Marks) + Number(kata3Marks)) / 3;
+
+    const percentage = average * 10;
+
+    const medal = getMedal(percentage);
+
+    await prisma.kataScore.upsert({
+      where: {
         registrationId,
+      },
+
+      update: {
         kata1Marks,
         kata2Marks,
         kata3Marks,
-      } = req.body;
+      },
 
-      const registration =
-        await prisma.registration.findUnique({
-          where: {
-            id: registrationId,
-          },
-        });
+      create: {
+        registrationId,
 
-      if (!registration) {
-        throw new ApiError(
-          HTTP_STATUS.NOT_FOUND,
-          "Student not found"
-        );
-      }
+        kata1Name: registration.kata1 || "",
 
-      const average =
-        (
-          Number(kata1Marks) +
-          Number(kata2Marks) +
-          Number(kata3Marks)
-        ) / 3;
+        kata2Name: registration.kata2 || "",
 
-      const percentage =
-        average * 10;
+        kata3Name: registration.kata3 || "",
 
-      const medal =
-        getMedal(
-          percentage
-        );
+        kata1Marks,
+        kata2Marks,
+        kata3Marks,
+      },
+    });
 
-      await prisma.kataScore.upsert({
-        where: {
-          registrationId,
-        },
+    await prisma.registration.update({
+      where: {
+        id: registrationId,
+      },
+      data: {
+        testCompleted: true,
+      },
+    });
 
-        update: {
-          kata1Marks,
-          kata2Marks,
-          kata3Marks,
-        },
-
-        create: {
+    return res.status(HTTP_STATUS.OK).json(
+      new ApiResponse(
+        HTTP_STATUS.OK,
+        {
           registrationId,
 
-          kata1Name:
-            registration.kata1 || "",
+          studentName: registration.studentName,
 
-          kata2Name:
-            registration.kata2 || "",
+          average,
 
-          kata3Name:
-            registration.kata3 || "",
+          percentage,
 
-          kata1Marks,
-          kata2Marks,
-          kata3Marks,
+          medal,
         },
-      });
-
-      await prisma.registration.update({
-        where: {
-          id: registrationId,
-        },
-        data: {
-          testCompleted: true,
-        },
-      });
-
-      return res
-        .status(
-          HTTP_STATUS.OK
-        )
-        .json(
-          new ApiResponse(
-            HTTP_STATUS.OK,
-            {
-              registrationId,
-
-              studentName:
-                registration.studentName,
-
-              average,
-
-              percentage,
-
-              medal,
-            },
-            "Test completed successfully"
-          )
-        );
-    }
-  );
+        "Test completed successfully",
+      ),
+    );
+  },
+);
