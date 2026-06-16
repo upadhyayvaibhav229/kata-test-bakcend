@@ -38,6 +38,7 @@ const API_PREFIX = "/api/v1";
 
 // app.use(`${API_PREFIX}/forms`, formRoutes);
 app.use(`${API_PREFIX}/kata-test`, kataTestRoutes);
+app.use("/api/registrations", kataTestRoutes);
 app.use(`${API_PREFIX}/scores`, scoreRoutes);
 // app.use(`${API_PREFIX}/sessions`, sessionRoutes);
 // app.use(`${API_PREFIX}/scores`, scoreRoutes);
