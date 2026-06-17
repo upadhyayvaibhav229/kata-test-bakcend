@@ -28,6 +28,9 @@ router.get("/download-temp", downloadTemplate);
 
 router.get("/belts", getBelts);
 
+router.get("/sequence", getSequence);
+
+router.post("/save-sequence", saveSequence);
 router.get("/",  getRegistrations);
 
 
@@ -35,9 +38,6 @@ router.post("/", createRegistration);
 
 router.get("/:id", getRegistrationById);
 
-router.get("/sequence", getSequence);
-
-router.post("/save-sequence", saveSequence);
 
 router.put(
   "/:id",

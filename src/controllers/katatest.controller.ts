@@ -13,37 +13,39 @@ const ALLOWED_EXCEL_TYPES = [
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const BELT_LABEL_TO_KEY: Record<string, string> = {
-  "white":               "white",
-  "yellow":              "yellow",
-  "orange":              "orange",
-  "green":               "green",
-  "blue":                "blue",
-  "purple":              "purple",
-  "brown":               "brown",
-  "brown & white":       "brown-white",
-  "brown and white":     "brown-white",
-  "brown-white":         "brown-white",
-  "brown 2 stripes":     "brown-2stripe",
-  "brown 2stripe":       "brown-2stripe",
-  "brown-2stripe":       "brown-2stripe",
-  "brown 3 stripes":     "brown-3stripe",
-  "brown 3stripe":       "brown-3stripe",
-  "brown-3stripe":       "brown-3stripe",
-  "black":               "shodan",
-  "black belt":          "shodan",
-  "shodan":              "shodan",
-  "black belt shodan":   "shodan",
-  "nidan":               "nidan",
-  "black belt nidan":    "nidan",
-  "sandan":              "sandan",
-  "black belt sandan":   "sandan",
-  "yondan":              "yondan",
-  "black belt yondan":   "yondan",
-  "black belt yondan+":  "yondan",
+  white: "white",
+  yellow: "yellow",
+  orange: "orange",
+  green: "green",
+  blue: "blue",
+  purple: "purple",
+  brown: "brown",
+  "brown & white": "brown-white",
+  "brown and white": "brown-white",
+  "brown-white": "brown-white",
+  "brown 2 stripes": "brown-2stripe",
+  "brown 2stripe": "brown-2stripe",
+  "brown-2stripe": "brown-2stripe",
+  "brown 3 stripes": "brown-3stripe",
+  "brown 3stripe": "brown-3stripe",
+  "brown-3stripe": "brown-3stripe",
+  black: "shodan",
+  "black belt": "shodan",
+  shodan: "shodan",
+  "black belt shodan": "shodan",
+  nidan: "nidan",
+  "black belt nidan": "nidan",
+  sandan: "sandan",
+  "black belt sandan": "sandan",
+  yondan: "yondan",
+  "black belt yondan": "yondan",
+  "black belt yondan+": "yondan",
 };
 
 function normalizeBelt(raw: string): string {
-  return BELT_LABEL_TO_KEY[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase();
+  return (
+    BELT_LABEL_TO_KEY[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase()
+  );
 }
 function getMedal(percentage: number) {
   if (percentage >= 85) return "Gold";
@@ -208,7 +210,6 @@ export const downloadTemplate = (req: Request, res: Response) => {
   return res.send(buffer);
 };
 
-
 export const getBranches = asyncHandler(
   async (req: Request, res: Response): Promise<Response> => {
     const branches = await prisma.registration.findMany({
@@ -256,7 +257,7 @@ export const getBelts = asyncHandler(
 );
 
 export const getRegistrations = asyncHandler(async (req, res) => {
-    console.log("QUERY =>", req.query);
+  console.log("QUERY =>", req.query);
   const { search, branch, belt, page = 1, limit = 10 } = req.query;
 
   const where: any = {};
@@ -282,15 +283,25 @@ export const getRegistrations = asyncHandler(async (req, res) => {
   const [registrations, total] = await prisma.$transaction([
     prisma.registration.findMany({
       where,
+      include: {
+        sequenceOrder: true,
+      },
       skip,
       take: Number(limit),
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: [
+        {
+          sequenceOrder: {
+            sequenceNo: "asc",
+          },
+        },
+        {
+          createdAt: "asc",
+        },
+      ],
     }),
-    prisma.registration.count({
-      where,
-    }),
+    // prisma.registration.count({
+    //   where,
+    // }),
   ]);
 
   return res.status(200).json(
@@ -466,13 +477,9 @@ export const getSequence = asyncHandler(async (req, res) => {
     },
   });
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      sequence,
-      "Sequence fetched successfully"
-    )
-  );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, sequence, "Sequence fetched successfully"));
 });
 
 export const saveSequence = asyncHandler(async (req, res) => {
@@ -502,7 +509,7 @@ export const saveSequence = asyncHandler(async (req, res) => {
     });
   });
 
-  return res.status(200).json(
-    new ApiResponse(200, null, "Sequence saved successfully")
-  );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Sequence saved successfully"));
 });
