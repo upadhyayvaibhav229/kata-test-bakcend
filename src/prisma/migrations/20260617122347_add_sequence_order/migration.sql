@@ -23,6 +23,19 @@ CREATE TABLE "registrations" (
 );
 
 -- CreateTable
+CREATE TABLE "SequenceOrder" (
+    "id" TEXT NOT NULL,
+    "registrationId" TEXT NOT NULL,
+    "branch" TEXT NOT NULL,
+    "belt" TEXT NOT NULL,
+    "sequenceNo" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SequenceOrder_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "kata_scores" (
     "id" TEXT NOT NULL,
     "registrationId" TEXT NOT NULL,
@@ -42,7 +55,16 @@ CREATE TABLE "kata_scores" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "SequenceOrder_registrationId_key" ON "SequenceOrder"("registrationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SequenceOrder_branch_belt_sequenceNo_key" ON "SequenceOrder"("branch", "belt", "sequenceNo");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "kata_scores_registrationId_key" ON "kata_scores"("registrationId");
+
+-- AddForeignKey
+ALTER TABLE "SequenceOrder" ADD CONSTRAINT "SequenceOrder_registrationId_fkey" FOREIGN KEY ("registrationId") REFERENCES "registrations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "kata_scores" ADD CONSTRAINT "kata_scores_registrationId_fkey" FOREIGN KEY ("registrationId") REFERENCES "registrations"("id") ON DELETE CASCADE ON UPDATE CASCADE;

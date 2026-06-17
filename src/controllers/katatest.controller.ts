@@ -6,49 +6,45 @@ import { ApiResponse } from "../utils/ApiResponse";
 import { HTTP_STATUS } from "../utils/constants";
 import { asyncHandler } from "../utils/asyncHandler";
 
-// Maps whatever someone might type in Excel → your BeltKey
-// Add more aliases here as needed
-const BELT_LABEL_TO_KEY: Record<string, string> = {
-  "white": "white",
-  "yellow": "yellow",
-  "orange": "orange",
-  "green": "green",
-  "blue": "blue",
-  "purple": "purple",
-  "brown": "brown",
-  "brown & white": "brown-white",
-  "brown and white": "brown-white",
-  "brown-white": "brown-white",
-  "brown 2 stripes": "brown-2stripe",
-  "brown 2stripe": "brown-2stripe",
-  "brown-2stripe": "brown-2stripe",
-  "brown 3 stripes": "brown-3stripe",
-  "brown 3stripe": "brown-3stripe",
-  "brown-3stripe": "brown-3stripe",
-  "black": "shodan",
-  "black belt": "shodan",
-  "shodan": "shodan",
-  "black belt shodan": "shodan",
-  "nidan": "nidan",
-  "black belt nidan": "nidan",
-  "sandan": "sandan",
-  "black belt sandan": "sandan",
-  "yondan": "yondan",
-  "black belt yondan": "yondan",
-  "black belt yondan+": "yondan",
-};
-
-function normalizeBelt(raw: string): string {
-  return BELT_LABEL_TO_KEY[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase();
-}
-
 const ALLOWED_EXCEL_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-excel",
 ];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const BELT_LABEL_TO_KEY: Record<string, string> = {
+  "white":               "white",
+  "yellow":              "yellow",
+  "orange":              "orange",
+  "green":               "green",
+  "blue":                "blue",
+  "purple":              "purple",
+  "brown":               "brown",
+  "brown & white":       "brown-white",
+  "brown and white":     "brown-white",
+  "brown-white":         "brown-white",
+  "brown 2 stripes":     "brown-2stripe",
+  "brown 2stripe":       "brown-2stripe",
+  "brown-2stripe":       "brown-2stripe",
+  "brown 3 stripes":     "brown-3stripe",
+  "brown 3stripe":       "brown-3stripe",
+  "brown-3stripe":       "brown-3stripe",
+  "black":               "shodan",
+  "black belt":          "shodan",
+  "shodan":              "shodan",
+  "black belt shodan":   "shodan",
+  "nidan":               "nidan",
+  "black belt nidan":    "nidan",
+  "sandan":              "sandan",
+  "black belt sandan":   "sandan",
+  "yondan":              "yondan",
+  "black belt yondan":   "yondan",
+  "black belt yondan+":  "yondan",
+};
 
+function normalizeBelt(raw: string): string {
+  return BELT_LABEL_TO_KEY[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase();
+}
 function getMedal(percentage: number) {
   if (percentage >= 85) return "Gold";
 
@@ -98,6 +94,7 @@ export const importExcel = asyncHandler(
       const branch = row["Branch"] || row["branch"] || "";
 
       const belt = normalizeBelt(row["Belt"] || row["belt"] || "");
+
       const phone = row["Phone"] || row["phone"] || null;
 
       const parentPhone = row["Parent Phone"] || row["parentPhone"] || null;
@@ -259,9 +256,11 @@ export const getBelts = asyncHandler(
 );
 
 export const getRegistrations = asyncHandler(async (req, res) => {
+    console.log("QUERY =>", req.query);
   const { search, branch, belt, page = 1, limit = 10 } = req.query;
 
   const where: any = {};
+  console.log("WHERES =>", JSON.stringify(where, null, 2));
 
   if (search) {
     where.studentName = {
@@ -450,3 +449,60 @@ export const completeKataTest = asyncHandler(
     );
   },
 );
+
+export const getSequence = asyncHandler(async (req, res) => {
+  const { branch, belt } = req.query;
+
+  const sequence = await prisma.sequenceOrder.findMany({
+    where: {
+      branch: String(branch),
+      belt: String(belt),
+    },
+    include: {
+      registration: true,
+    },
+    orderBy: {
+      sequenceNo: "asc",
+    },
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      sequence,
+      "Sequence fetched successfully"
+    )
+  );
+});
+
+export const saveSequence = asyncHandler(async (req, res) => {
+  const { branch, belt, sequence } = req.body;
+
+  if (!branch || !belt || !Array.isArray(sequence)) {
+    throw new ApiError(400, "Branch, belt and sequence are required");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Remove old sequence
+    await tx.sequenceOrder.deleteMany({
+      where: {
+        branch,
+        belt,
+      },
+    });
+
+    // Create new sequence
+    await tx.sequenceOrder.createMany({
+      data: sequence.map((registrationId: string, index: number) => ({
+        registrationId,
+        branch,
+        belt,
+        sequenceNo: index + 1,
+      })),
+    });
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "Sequence saved successfully")
+  );
+});

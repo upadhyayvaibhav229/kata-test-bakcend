@@ -8,7 +8,9 @@ import {
   getBranches,
   getRegistrationById,
   getRegistrations,
+  getSequence,
   importExcel,
+  saveSequence,
   updateregisterdStudent,
 } from "../controllers/katatest.controller";
 
@@ -32,6 +34,10 @@ router.get("/",  getRegistrations);
 router.post("/", createRegistration);
 
 router.get("/:id", getRegistrationById);
+
+router.get("/sequence", getSequence);
+
+router.post("/save-sequence", saveSequence);
 
 router.put(
   "/:id",
