@@ -47,13 +47,10 @@ function normalizeBelt(raw: string): string {
     BELT_LABEL_TO_KEY[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase()
   );
 }
-function getMedal(percentage: number) {
-  if (percentage >= 85) return "Gold";
-
-  if (percentage >= 75) return "Silver";
-
-  if (percentage >= 65) return "Bronze";
-
+function getMedal(average: number) {
+  if (average >= 5.8) return "Gold";
+  if (average >= 5.6) return "Silver";
+  if (average >= 5.0) return "Bronze";
   return "Participation";
 }
 
@@ -397,9 +394,7 @@ export const completeKataTest = asyncHandler(
     const average =
       (Number(kata1Marks) + Number(kata2Marks) + Number(kata3Marks)) / 3;
 
-    const percentage = average * 10;
-
-    const medal = getMedal(percentage);
+    const medal = getMedal(average);
 
     await prisma.kataScore.upsert({
       where: {
@@ -410,6 +405,8 @@ export const completeKataTest = asyncHandler(
         kata1Marks,
         kata2Marks,
         kata3Marks,
+        average,
+        medal,
       },
 
       create: {
@@ -424,6 +421,8 @@ export const completeKataTest = asyncHandler(
         kata1Marks,
         kata2Marks,
         kata3Marks,
+        average,
+        medal,
       },
     });
 
@@ -445,8 +444,6 @@ export const completeKataTest = asyncHandler(
           studentName: registration.studentName,
 
           average,
-
-          percentage,
 
           medal,
         },

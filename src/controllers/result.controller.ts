@@ -52,12 +52,20 @@ export const getResults =
           belt: student.belt,
 
           average: student.score?.average ?? 0,
-          percentage: student.score?.percentage ?? 0,
           medal: student.score?.medal ?? "Participation",
+          createdAt: student.createdAt,
         }))
-        .sort((a, b) => b.percentage - a.percentage)
+        .sort((a, b) => {
+          if (b.average !== a.average) return b.average - a.average;
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        })
         .map((item, index) => ({
-          ...item,
+          registrationId: item.registrationId,
+          studentName: item.studentName,
+          branch: item.branch,
+          belt: item.belt,
+          average: item.average,
+          medal: item.medal,
           rank: index + 1,
         }));
 
@@ -84,24 +92,13 @@ export const exportResultsExcel = asyncHandler(
 
     const data = registrations
       .filter((r) => r.score)
-      .map((r) => {
-        const average =
-          (Number(r.score?.kata1Marks || 0) +
-            Number(r.score?.kata2Marks || 0) +
-            Number(r.score?.kata3Marks || 0)) /
-          3;
-
-        const percentage = average * 10;
-
-        return {
-          Student: r.studentName,
-          Branch: r.branch,
-          Belt: r.belt,
-          Average: Number(r.score?.average || 0).toFixed(2),
-          Percentage: Number(r.score?.percentage || 0).toFixed(2),
-          Medal: r.score?.medal || "Participation",
-        };
-      });
+      .map((r) => ({
+        "Student Name": r.studentName,
+        Branch: r.branch,
+        Belt: r.belt,
+        "Average Score": Number(r.score?.average || 0).toFixed(2),
+        Medal: r.score?.medal || "Participation",
+      }));
 
     const workbook = XLSX.utils.book_new();
 

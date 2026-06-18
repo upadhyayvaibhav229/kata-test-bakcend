@@ -6,6 +6,13 @@ import { ApiResponse } from "../utils/ApiResponse";
 import { HTTP_STATUS } from "../utils/constants";
 import { asyncHandler } from "../utils/asyncHandler";
 
+function getMedal(average: number) {
+  if (average >= 5.8) return "Gold";
+  if (average >= 5.6) return "Silver";
+  if (average >= 5.0) return "Bronze";
+  return "Participation";
+}
+
 export const saveScore = asyncHandler(
   async (
     req: Request,
@@ -39,18 +46,7 @@ export const saveScore = asyncHandler(
         Number(kata3Marks)
       ) / 3;
 
-    const percentage =
-      average * 10;
-
-    let medal = "Participation";
-
-    if (percentage >= 70) {
-      medal = "Gold";
-    } else if (percentage >= 60) {
-      medal = "Silver";
-    } else if (percentage >= 50) {
-      medal = "Bronze";
-    }
+    const medal = getMedal(average);
 
     const score =
       await prisma.kataScore.upsert({
@@ -62,7 +58,6 @@ export const saveScore = asyncHandler(
           kata2Marks,
           kata3Marks,
           average,
-          percentage,
           medal,
         },
         create: {
@@ -82,7 +77,6 @@ export const saveScore = asyncHandler(
           kata3Marks,
 
           average,
-          percentage,
           medal,
         },
       });

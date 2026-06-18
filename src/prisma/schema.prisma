@@ -79,8 +79,7 @@ model KataScore {
   kata3Name  String
   kata3Marks Float?
 
-  average    Float?
-  percentage Float?
+  average Float?
 
   medal String?
 

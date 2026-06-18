@@ -46,7 +46,6 @@ CREATE TABLE "kata_scores" (
     "kata3Name" TEXT NOT NULL,
     "kata3Marks" DOUBLE PRECISION,
     "average" DOUBLE PRECISION,
-    "percentage" DOUBLE PRECISION,
     "medal" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
