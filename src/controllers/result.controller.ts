@@ -1,3 +1,4 @@
+// result.controller.ts
 import { Request, Response } from "express";
 import XLSX from "xlsx";
 
@@ -8,17 +9,7 @@ import { HTTP_STATUS } from "../utils/constants";
 import { asyncHandler } from "../utils/asyncHandler";
 
 
-function getMedal(
-  percentage: number
-) {
-  if (percentage >= 85) return "Gold";
 
-  if (percentage >= 75) return "Silver";
-
-  if (percentage >= 65) return "Bronze";
-
-  return "Participation";
-}
 
 export const getResults =
   asyncHandler(
@@ -53,72 +44,22 @@ export const getResults =
           },
         });
 
-      const results =
-        registrations
-          .map((student) => {
-            const score =
-              student.score;
+      const results = registrations
+        .map((student) => ({
+          registrationId: student.id,
+          studentName: student.studentName,
+          branch: student.branch,
+          belt: student.belt,
 
-            const average =
-              (
-                Number(
-                  score?.kata1Marks ||
-                    0
-                ) +
-                Number(
-                  score?.kata2Marks ||
-                    0
-                ) +
-                Number(
-                  score?.kata3Marks ||
-                    0
-                )
-              ) / 3;
-
-            const percentage =
-              average * 10;
-
-            return {
-              registrationId:
-                student.id,
-
-              studentName:
-                student.studentName,
-
-              branch:
-                student.branch,
-
-              belt:
-                student.belt,
-
-              average,
-
-              percentage,
-
-              medal:
-                getMedal(
-                  percentage
-                ),
-            };
-          })
-          .sort(
-            (
-              a,
-              b
-            ) =>
-              b.percentage -
-              a.percentage
-          )
-          .map(
-            (
-              item,
-              index
-            ) => ({
-              ...item,
-              rank:
-                index + 1,
-            })
-          );
+          average: student.score?.average ?? 0,
+          percentage: student.score?.percentage ?? 0,
+          medal: student.score?.medal ?? "Participation",
+        }))
+        .sort((a, b) => b.percentage - a.percentage)
+        .map((item, index) => ({
+          ...item,
+          rank: index + 1,
+        }));
 
       return res
         .status(
@@ -154,16 +95,11 @@ export const exportResultsExcel = asyncHandler(
 
         return {
           Student: r.studentName,
-
           Branch: r.branch,
-
           Belt: r.belt,
-
-          Average: average.toFixed(2),
-
-          Percentage: percentage.toFixed(2),
-
-          Medal: getMedal(percentage),
+          Average: Number(r.score?.average || 0).toFixed(2),
+          Percentage: Number(r.score?.percentage || 0).toFixed(2),
+          Medal: r.score?.medal || "Participation",
         };
       });
 

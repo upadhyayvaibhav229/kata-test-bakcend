@@ -290,18 +290,13 @@ export const getRegistrations = asyncHandler(async (req, res) => {
       take: Number(limit),
       orderBy: [
         {
-          sequenceOrder: {
-            sequenceNo: "asc",
-          },
-        },
-        {
           createdAt: "asc",
         },
       ],
     }),
-    // prisma.registration.count({
-    //   where,
-    // }),
+    prisma.registration.count({
+      where,
+    }),
   ]);
 
   return res.status(200).json(

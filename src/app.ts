@@ -7,6 +7,7 @@ import kataTestRoutes from "./routes/katatest.routes";
 import scoreRoutes from "./routes/score.routes";
 import resultRoutes from "./routes/result.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
+import dashboardRoutes from "./routes/dashboard.routes";
 
 const app = express();
 
@@ -14,8 +15,10 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: process.env.CORS_ORIGIN || "http://localhost:8080",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -43,6 +46,9 @@ app.use(`${API_PREFIX}/scores`, scoreRoutes);
 // app.use(`${API_PREFIX}/sessions`, sessionRoutes);
 // app.use(`${API_PREFIX}/scores`, scoreRoutes);
 app.use(`${API_PREFIX}/results`, resultRoutes);
+app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
+
+// 
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 

@@ -1,3 +1,4 @@
+// scroe.controller.ts
 import { Request, Response } from "express";
 import prisma from "../db/prisma";
 import { ApiError } from "../utils/ApiError";
@@ -43,11 +44,11 @@ export const saveScore = asyncHandler(
 
     let medal = "Participation";
 
-    if (percentage >= 85) {
+    if (percentage >= 70) {
       medal = "Gold";
-    } else if (percentage >= 75) {
+    } else if (percentage >= 60) {
       medal = "Silver";
-    } else if (percentage >= 65) {
+    } else if (percentage >= 50) {
       medal = "Bronze";
     }
 
