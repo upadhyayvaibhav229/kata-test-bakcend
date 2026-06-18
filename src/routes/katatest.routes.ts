@@ -17,7 +17,10 @@ import {
 const router = Router();
 
 const upload = multer({
-  dest: "uploads/",
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
 });
 
 router.get("/branches", getBranches);

@@ -1,6 +1,5 @@
-import { Registration, TournamentForm, KataScore } from "@prisma/client";
+import { KataScore, Registration } from "@prisma/client";
 
 export type RegistrationWithRelations = Registration & {
-  form?: TournamentForm;
-  sessions?: KataScore[];
+  scores?: KataScore[];
 };

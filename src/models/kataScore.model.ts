@@ -1,7 +1,6 @@
-import { KataScore, EvaluationSession, Registration } from "@prisma/client";
+import { KataScore, Registration } from "@prisma/client";
 
 export type KataScoreWithRelations = KataScore & {
-  session?: EvaluationSession;
   registration?: Registration;
 };
 

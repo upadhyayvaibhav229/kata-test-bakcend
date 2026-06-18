@@ -10,7 +10,7 @@ export const getDashboard = asyncHandler(
       testedStudents,
       pendingStudents,
       branches,
-      medalStats,
+      scores,
       topPerformers,
     ] = await prisma.$transaction([
       prisma.registration.count({
@@ -32,9 +32,8 @@ export const getDashboard = asyncHandler(
         },
       }),
 
-      prisma.kataScore.groupBy({
-        by: ["medal"],
-        _count: {
+      prisma.kataScore.findMany({
+        select: {
           medal: true,
         },
       }),
@@ -68,17 +67,16 @@ export const getDashboard = asyncHandler(
 
     const medals = {
       gold:
-        medalStats.find((m) => m.medal === "Gold")?._count.medal || 0,
+        scores.filter((score) => score.medal === "Gold").length,
 
       silver:
-        medalStats.find((m) => m.medal === "Silver")?._count.medal || 0,
+        scores.filter((score) => score.medal === "Silver").length,
 
       bronze:
-        medalStats.find((m) => m.medal === "Bronze")?._count.medal || 0,
+        scores.filter((score) => score.medal === "Bronze").length,
 
       participation:
-        medalStats.find((m) => m.medal === "Participation")?._count
-          .medal || 0,
+        scores.filter((score) => score.medal === "Participation").length,
     };
 
     const branchPerformance = await Promise.all(

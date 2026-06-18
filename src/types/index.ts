@@ -1,29 +1,12 @@
 import { Request } from "express";
-import {
-  TournamentForm,
-  Registration,
-  EvaluationSession,
-  KataScore,
-  FormStatus,
-  RegistrationStatus,
-  SessionStatus,
-  Gender,
-} from "@prisma/client";
+import { KataScore, Registration } from "@prisma/client";
 
-// ─── Re-exports from Prisma ──────────────────────────────────────────────────
+export type { KataScore, Registration };
 
-export type {
-  TournamentForm,
-  Registration,
-  EvaluationSession,
-  KataScore,
-  FormStatus,
-  RegistrationStatus,
-  SessionStatus,
-  Gender,
-};
-
-// ─── Pagination ──────────────────────────────────────────────────────────────
+export type FormStatus = string;
+export type RegistrationStatus = string;
+export type SessionStatus = string;
+export type Gender = string;
 
 export interface PaginationQuery {
   page?: number;
@@ -38,8 +21,6 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-// ─── Form ────────────────────────────────────────────────────────────────────
-
 export interface CreateFormInput {
   title: string;
   description?: string;
@@ -53,34 +34,25 @@ export interface UpdateFormInput extends Partial<CreateFormInput> {
   status?: FormStatus;
 }
 
-// ─── Registration ────────────────────────────────────────────────────────────
-
 export interface CreateRegistrationInput {
-  formId: string;
   studentName: string;
-  dateOfBirth: string;
-  gender: Gender;
+  age: number;
+  branch: string;
   belt: string;
-  dojo: string;
-  coachName: string;
-  contactNumber: string;
-  email?: string;
-  weightClass: string;
-  ageCategory: string;
-  kataCategory: string;
+  phone?: string;
+  parentPhone?: string;
+  kata1?: string;
+  kata2?: string;
+  kata3?: string;
 }
 
-export interface UpdateRegistrationInput {
+export interface UpdateRegistrationInput extends Partial<CreateRegistrationInput> {
   status?: RegistrationStatus;
 }
 
-// ─── Session ─────────────────────────────────────────────────────────────────
-
 export interface CreateSessionInput {
-  formId: string;
-  name: string;
-  category: string;
-  round?: number;
+  branch: string;
+  belt: string;
 }
 
 export interface UpdateSessionInput {
@@ -89,29 +61,22 @@ export interface UpdateSessionInput {
   endedAt?: string;
 }
 
-// ─── Score ───────────────────────────────────────────────────────────────────
-
 export interface CreateScoreInput {
-  sessionId: string;
   registrationId: string;
-  technicalScore: number;
-  athleticScore: number;
-  timingScore: number;
-  penaltyPoints?: number;
-  judgeNotes?: string;
+  kata1Name: string;
+  kata1Marks?: number;
+  kata2Name: string;
+  kata2Marks?: number;
+  kata3Name: string;
+  kata3Marks?: number;
 }
 
-export interface UpdateScoreInput extends Partial<Omit<CreateScoreInput, "sessionId" | "registrationId">> {}
-
-// ─── Result ──────────────────────────────────────────────────────────────────
+export interface UpdateScoreInput extends Partial<CreateScoreInput> {}
 
 export interface ResultFilters {
-  formId?: string;
-  sessionId?: string;
-  category?: string;
+  branch?: string;
+  belt?: string;
 }
-
-// ─── Express Extensions ──────────────────────────────────────────────────────
 
 export interface AuthenticatedRequest extends Request {
   user?: {
