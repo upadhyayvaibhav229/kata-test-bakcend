@@ -10,12 +10,16 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import dashboardRoutes from "./routes/dashboard.routes";
 
 const app = express();
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:8080")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // ─── Core Middleware ──────────────────────────────────────────────────────────
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:8080",
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
