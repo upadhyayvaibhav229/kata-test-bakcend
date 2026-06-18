@@ -10,21 +10,34 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import dashboardRoutes from "./routes/dashboard.routes";
 
 const app = express();
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:8080")
+const allowedOrigins = (
+  process.env.CORS_ORIGIN ||
+  "http://localhost:8080,http://localhost:3000,https://dojo-flow.vercel.app"
+)
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const corsOptions: cors.CorsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
 // ─── Core Middleware ──────────────────────────────────────────────────────────
 
 app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
+  cors(corsOptions)
 );
+app.options("*", cors(corsOptions));
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
