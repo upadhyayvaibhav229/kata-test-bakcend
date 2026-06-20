@@ -7,10 +7,10 @@ import { HTTP_STATUS } from "../utils/constants";
 import { asyncHandler } from "../utils/asyncHandler";
 
 function getMedal(average: number) {
-  if (average >= 5.8) return "Gold";
-  if (average >= 5.6) return "Silver";
-  if (average >= 5.0) return "Bronze";
-  return "Participation";
+  if (average > 7) return "Gold";
+  if (average >= 6) return "Silver";
+  if (average >= 5) return "Bronze";
+  return "No Medal";
 }
 
 export const saveScore = asyncHandler(
