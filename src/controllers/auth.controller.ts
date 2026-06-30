@@ -35,10 +35,20 @@ export const login = asyncHandler(
 
     const token = await signAccessToken({ sub: user.id, role: user.role });
 
+    const isProd = process.env.NODE_ENV === "production";
+
+    // TEMP DEBUG LOG
+    console.log("LOGIN DEBUG:", {
+      NODE_ENV: process.env.NODE_ENV,
+      isProd,
+      sameSite: isProd ? "none" : "lax",
+      secure: isProd,
+    });
+
     res.cookie("accessToken", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
       maxAge: 1000 * 60 * 60,
       path: "/",
     });
@@ -59,7 +69,6 @@ export const login = asyncHandler(
     );
   },
 );
-
 export const logout = asyncHandler(
   async (_req: Request, res: Response): Promise<Response> => {
     res.clearCookie("accessToken", {
