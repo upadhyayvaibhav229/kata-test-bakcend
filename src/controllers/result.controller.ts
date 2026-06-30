@@ -12,7 +12,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 
 export const getResults =
-  asyncHandler(
+  asyncHandler( 
     async (
       req: Request,
       res: Response

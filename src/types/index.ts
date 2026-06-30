@@ -78,9 +78,11 @@ export interface ResultFilters {
   belt?: string;
 }
 
+export type Role = "ADMIN" | "SUPER_ADMIN";
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
-    role: string;
+    role: Role;
   };
 }

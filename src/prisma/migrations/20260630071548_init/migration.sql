@@ -1,6 +1,22 @@
 -- CreateEnum
 CREATE TYPE "Medal" AS ENUM ('GOLD', 'SILVER', 'BRONZE', 'PARTICIPATION');
 
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'SUPER_ADMIN');
+
+-- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'ADMIN',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateTable
 CREATE TABLE "registrations" (
     "id" TEXT NOT NULL,
@@ -52,6 +68,9 @@ CREATE TABLE "kata_scores" (
 
     CONSTRAINT "kata_scores_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SequenceOrder_registrationId_key" ON "SequenceOrder"("registrationId");

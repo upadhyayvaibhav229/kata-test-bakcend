@@ -1,9 +1,11 @@
 import { Response, NextFunction } from "express";
+import { jwtVerify } from "jose";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/asyncHandler";
-import { AuthenticatedRequest } from "../types";
+import { AuthenticatedRequest, Role } from "../types";
 
-// TODO: Replace with your actual auth strategy (JWT, session, API key, etc.)
+const JWT_SECRET = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET!);
+
 const verifyJWT = asyncHandler(
   async (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
     const token =
@@ -14,12 +16,19 @@ const verifyJWT = asyncHandler(
       throw new ApiError(401, "Unauthorized: No token provided");
     }
 
-    // TODO: Verify token and attach user to req
-    // const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!);
-    // req.user = decoded as { id: string; role: string };
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
 
-    next();
-  }
+      req.user = {
+        id: payload.sub as string,
+        role: payload.role as Role,
+      };
+
+      next();
+    } catch (err) {
+      throw new ApiError(401, "Unauthorized: Invalid or expired token");
+    }
+  },
 );
 
 const requireRole = (...roles: string[]) =>
@@ -34,7 +43,7 @@ const requireRole = (...roles: string[]) =>
       }
 
       next();
-    }
+    },
   );
 
 export { verifyJWT, requireRole };

@@ -92,6 +92,7 @@ const BELT_LABEL_TO_KEY: Record<string, string> = {
 };
 
 
+
 function normalizeBelt(raw: string): string {
   return (
     BELT_LABEL_TO_KEY[raw.trim().toLowerCase()] ?? raw.trim().toLowerCase()
@@ -304,11 +305,11 @@ export const getBelts = asyncHandler(
 );
 
 export const getRegistrations = asyncHandler(async (req, res) => {
-  console.log("QUERY =>", req.query);
+  // console.log("QUERY =>", req.query);
   const { search, branch, belt, page = 1, limit = 10 } = req.query;
 
   const where: any = {};
-  console.log("WHERES =>", JSON.stringify(where, null, 2));
+  // console.log("WHERES =>", JSON.stringify(where, null, 2));
 
   if (search) {
     where.studentName = {
