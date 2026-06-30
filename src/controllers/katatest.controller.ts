@@ -91,7 +91,46 @@ const BELT_LABEL_TO_KEY: Record<string, string> = {
   "10th dan": "judan",
 };
 
+// ── Flexible header matching for Excel import ───────────────────────────────
+// Maps our internal field names to a list of acceptable column header variants
+// (case-insensitive, trimmed). Lets users upload files with differently named
+// columns (e.g. "Full Name" instead of "Student Name") without failing import.
+const FIELD_ALIASES: Record<string, string[]> = {
+  studentName: ["student name", "studentname", "full name", "fullname", "name"],
+  age: ["age", "years", "student age"],
+  branch: ["branch", "dojo location", "dojo", "location", "center"],
+  belt: ["belt", "rank", "belt rank"],
+  phone: ["phone", "mobile no", "mobile", "contact", "phone number"],
+  parentPhone: [
+    "parent phone",
+    "parentphone",
+    "guardian contact",
+    "guardian phone",
+    "parent contact",
+  ],
+  kata1: ["kata 1", "kata1", "form 1", "form1"],
+  kata2: ["kata 2", "kata2", "form 2", "form2"],
+  kata3: ["kata 3", "kata3", "form 3", "form3"],
+};
 
+function normalizeHeader(header: string): string {
+  return header.trim().toLowerCase();
+}
+
+// Builds a lookup: internal field name -> actual header string found in the uploaded row
+function buildFieldMap(row: Record<string, any>): Record<string, string> {
+  const rowHeaders = Object.keys(row);
+  const map: Record<string, string> = {};
+
+  for (const [internalField, aliases] of Object.entries(FIELD_ALIASES)) {
+    const match = rowHeaders.find((h) => aliases.includes(normalizeHeader(h)));
+    if (match) {
+      map[internalField] = match;
+    }
+  }
+
+  return map;
+}
 
 function normalizeBelt(raw: string): string {
   return (
@@ -136,47 +175,43 @@ export const importExcel = asyncHandler(
       throw new ApiError(HTTP_STATUS.BAD_REQUEST, "Excel file is empty");
     }
 
+    // Build field map once from the first row's headers (all rows share the same headers)
+    const fieldMap = buildFieldMap(rows[0]);
+
+    if (!fieldMap.studentName) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Could not find a 'Student Name' column. Accepted names: Student Name, Full Name, Name.",
+      );
+    }
+
+    if (!fieldMap.branch) {
+      throw new ApiError(
+        HTTP_STATUS.BAD_REQUEST,
+        "Could not find a 'Branch' column. Accepted names: Branch, Dojo Location, Dojo, Location.",
+      );
+    }
+
+    const matchedHeaders = new Set(Object.values(fieldMap));
+
     const registrations = rows.map((row) => {
-      const studentName = row["Student Name"] || row["studentName"] || "";
+      const studentName = fieldMap.studentName ? row[fieldMap.studentName] || "" : "";
+      const age = Number(fieldMap.age ? row[fieldMap.age] : 0) || 0;
+      const branch = fieldMap.branch ? row[fieldMap.branch] || "" : "";
+      const belt = normalizeBelt(fieldMap.belt ? row[fieldMap.belt] || "" : "");
+      const phone = fieldMap.phone ? row[fieldMap.phone] || null : null;
+      const parentPhone = fieldMap.parentPhone ? row[fieldMap.parentPhone] || null : null;
+      const kata1 = fieldMap.kata1 ? row[fieldMap.kata1] || null : null;
+      const kata2 = fieldMap.kata2 ? row[fieldMap.kata2] || null : null;
+      const kata3 = fieldMap.kata3 ? row[fieldMap.kata3] || null : null;
 
-      const age = Number(row["Age"] || row["age"] || 0);
-
-      const branch = row["Branch"] || row["branch"] || "";
-
-      const belt = normalizeBelt(row["Belt"] || row["belt"] || "");
-
-      const phone = row["Phone"] || row["phone"] || null;
-
-      const parentPhone = row["Parent Phone"] || row["parentPhone"] || null;
-
-      const kata1 = row["Kata 1"] || row["kata1"] || null;
-
-      const kata2 = row["Kata 2"] || row["kata2"] || null;
-
-      const kata3 = row["Kata 3"] || row["kata3"] || null;
-
-      const extraData = { ...row };
-
-      [
-        "Student Name",
-        "studentName",
-        "Age",
-        "age",
-        "Branch",
-        "branch",
-        "Belt",
-        "belt",
-        "Phone",
-        "phone",
-        "Parent Phone",
-        "parentPhone",
-        "Kata 1",
-        "kata1",
-        "Kata 2",
-        "kata2",
-        "Kata 3",
-        "kata3",
-      ].forEach((key) => delete extraData[key]);
+      // Anything not matched to a known field falls into extraData
+      const extraData: Record<string, any> = {};
+      for (const key of Object.keys(row)) {
+        if (!matchedHeaders.has(key)) {
+          extraData[key] = row[key];
+        }
+      }
 
       return {
         studentName,
@@ -201,6 +236,7 @@ export const importExcel = asyncHandler(
         HTTP_STATUS.OK,
         {
           imported: registrations.length,
+          mappedColumns: fieldMap,
         },
         "Registrations imported successfully",
       ),
@@ -305,11 +341,9 @@ export const getBelts = asyncHandler(
 );
 
 export const getRegistrations = asyncHandler(async (req, res) => {
-  // console.log("QUERY =>", req.query);
   const { search, branch, belt, page = 1, limit = 10 } = req.query;
 
   const where: any = {};
-  // console.log("WHERES =>", JSON.stringify(where, null, 2));
 
   if (search) {
     where.studentName = {
