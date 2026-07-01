@@ -14,116 +14,105 @@ function getMedal(average: number) {
 }
 
 export const saveScore = asyncHandler(
-  async (
-    req: Request,
-    res: Response
-  ): Promise<Response> => {
+  async (req: Request, res: Response): Promise<Response> => {
     const {
       registrationId,
       kata1Marks,
       kata2Marks,
       kata3Marks,
+      kata1Name,
+      kata2Name,
+      kata3Name,
     } = req.body;
 
-    const registration =
-      await prisma.registration.findUnique({
-        where: {
-          id: registrationId,
-        },
-      });
+    const registration = await prisma.registration.findUnique({
+      where: {
+        id: registrationId,
+      },
+    });
 
     if (!registration) {
-      throw new ApiError(
-        HTTP_STATUS.NOT_FOUND,
-        "Registration not found"
-      );
+      throw new ApiError(HTTP_STATUS.NOT_FOUND, "Registration not found");
     }
 
     const average =
-      (
-        Number(kata1Marks) +
-        Number(kata2Marks) +
-        Number(kata3Marks)
-      ) / 3;
+      (Number(kata1Marks) + Number(kata2Marks) + Number(kata3Marks)) / 3;
 
     const medal = getMedal(average);
 
-    const score =
-      await prisma.kataScore.upsert({
-        where: {
-          registrationId,
-        },
-        update: {
-          kata1Marks,
-          kata2Marks,
-          kata3Marks,
-          average,
-          medal,
-        },
-        create: {
-          registrationId,
+    const resolvedKata1Name = kata1Name?.trim() || registration.kata1 || "";
+    const resolvedKata2Name = kata2Name?.trim() || registration.kata2 || "";
+    const resolvedKata3Name = kata3Name?.trim() || registration.kata3 || "";
 
-          kata1Name:
-            registration.kata1 || "",
+    const registrationData: Record<string, string | boolean> = {
+      testCompleted: true,
+    };
 
-          kata2Name:
-            registration.kata2 || "",
+    if (!registration.kata1 && resolvedKata1Name) {
+      registrationData.kata1 = resolvedKata1Name;
+    }
+    if (!registration.kata2 && resolvedKata2Name) {
+      registrationData.kata2 = resolvedKata2Name;
+    }
+    if (!registration.kata3 && resolvedKata3Name) {
+      registrationData.kata3 = resolvedKata3Name;
+    }
 
-          kata3Name:
-            registration.kata3 || "",
+    const score = await prisma.kataScore.upsert({
+      where: {
+        registrationId,
+      },
+      update: {
+        kata1Marks,
+        kata2Marks,
+        kata3Marks,
+        kata1Name: resolvedKata1Name,
+        kata2Name: resolvedKata2Name,
+        kata3Name: resolvedKata3Name,
+        average,
+        medal,
+      },
+      create: {
+        registrationId,
 
-          kata1Marks,
-          kata2Marks,
-          kata3Marks,
+        kata1Name: resolvedKata1Name,
+        kata2Name: resolvedKata2Name,
+        kata3Name: resolvedKata3Name,
 
-          average,
-          medal,
-        },
-      });
+        kata1Marks,
+        kata2Marks,
+        kata3Marks,
+
+        average,
+        medal,
+      },
+    });
 
     await prisma.registration.update({
       where: {
         id: registrationId,
       },
-      data: {
-        testCompleted: true,
-      },
+      data: registrationData,
     });
 
-    return res.status(
-      HTTP_STATUS.OK
-    ).json(
-      new ApiResponse(
-        HTTP_STATUS.OK,
-        score,
-        "Score saved successfully"
-      )
-    );
-  }
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(new ApiResponse(HTTP_STATUS.OK, score, "Score saved successfully"));
+  },
 );
 
 export const getScore = asyncHandler(
-  async (
-    req: Request,
-    res: Response
-  ): Promise<Response> => {
-    const score =
-      await prisma.kataScore.findUnique({
-        where: {
-          registrationId:
-            req.params.registrationId,
-        },
-      });
+  async (req: Request, res: Response): Promise<Response> => {
+    const score = await prisma.kataScore.findUnique({
+      where: {
+        registrationId: req.params.registrationId,
+      },
+    });
 
-    return res.status(
-      HTTP_STATUS.OK
-    ).json(
-      new ApiResponse(
-        HTTP_STATUS.OK,
-        score,
-        "Score fetched successfully"
-      )
-    );
-  }
+    return res
+      .status(HTTP_STATUS.OK)
+      .json(
+        new ApiResponse(HTTP_STATUS.OK, score, "Score fetched successfully"),
+      );
+  },
 );
-
