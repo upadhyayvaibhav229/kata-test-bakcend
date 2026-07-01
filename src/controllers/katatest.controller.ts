@@ -338,93 +338,94 @@ export const importExcel = asyncHandler(
 
     let imported = 0;
 
-    await prisma.$transaction(async (tx) => {
-      for (const row of rows) {
-        const studentName = fieldMap.studentName
-          ? row[fieldMap.studentName]
-          : [
-              fieldMap.studentFirstName ? row[fieldMap.studentFirstName] : "",
-              fieldMap.studentMiddleName ? row[fieldMap.studentMiddleName] : "",
-              fieldMap.studentLastName ? row[fieldMap.studentLastName] : "",
-            ]
-              .filter(Boolean)
-              .join(" ")
-              .trim();
-        const age = Number(fieldMap.age ? row[fieldMap.age] : 0) || 0;
-        const branch = normalizeBranch(
-          fieldMap.branch
-            ? row[fieldMap.branch]
-            : fieldMap.rollNo
-              ? row[fieldMap.rollNo]
-              : "",
-        );
-        const belt = normalizeBelt(
-          fieldMap.belt ? row[fieldMap.belt] || "" : "",
-        );
-        const phone = fieldMap.phone ? row[fieldMap.phone] || null : null;
-        const parentPhone = fieldMap.parentPhone
-          ? row[fieldMap.parentPhone] || null
-          : null;
-        const kata1 = fieldMap.kata1 ? row[fieldMap.kata1] || null : null;
-        const kata2 = fieldMap.kata2 ? row[fieldMap.kata2] || null : null;
-        const kata3 = fieldMap.kata3 ? row[fieldMap.kata3] || null : null;
+    for (const row of rows) {
+      const studentName = fieldMap.studentName
+        ? row[fieldMap.studentName]
+        : [
+            fieldMap.studentFirstName ? row[fieldMap.studentFirstName] : "",
+            fieldMap.studentMiddleName ? row[fieldMap.studentMiddleName] : "",
+            fieldMap.studentLastName ? row[fieldMap.studentLastName] : "",
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
 
-        // Build extraData
-        const extraData: Record<string, any> = {};
-        for (const key of Object.keys(row)) {
-          if (!matchedHeaders.has(key)) {
-            extraData[key] = row[key];
-          }
+      const age = Number(fieldMap.age ? row[fieldMap.age] : 0) || 0;
+
+      const branch = normalizeBranch(
+        fieldMap.branch
+          ? row[fieldMap.branch]
+          : fieldMap.rollNo
+            ? row[fieldMap.rollNo]
+            : "",
+      );
+
+      const belt = normalizeBelt(fieldMap.belt ? row[fieldMap.belt] || "" : "");
+
+      const phone = fieldMap.phone ? row[fieldMap.phone] || null : null;
+      const parentPhone = fieldMap.parentPhone
+        ? row[fieldMap.parentPhone] || null
+        : null;
+
+      const kata1 = fieldMap.kata1 ? row[fieldMap.kata1] || null : null;
+      const kata2 = fieldMap.kata2 ? row[fieldMap.kata2] || null : null;
+      const kata3 = fieldMap.kata3 ? row[fieldMap.kata3] || null : null;
+
+      const extraData: Record<string, any> = {};
+
+      for (const key of Object.keys(row)) {
+        if (!matchedHeaders.has(key)) {
+          extraData[key] = row[key];
         }
+      }
 
-        // ===== Read scores if present =====
-        const kata1Marks = Number(row["SCORE 1"] || row["Score 1"] || 0);
-        const kata2Marks = Number(row["SCORE 2"] || row["Score 2"] || 0);
-        const kata3Marks = Number(row["SCORE 3"] || row["Score 3"] || 0);
+      const kata1Marks = Number(row["SCORE 1"] || row["Score 1"] || 0);
+      const kata2Marks = Number(row["SCORE 2"] || row["Score 2"] || 0);
+      const kata3Marks = Number(row["SCORE 3"] || row["Score 3"] || 0);
 
-        const average = Number(row["AVR. SCORE"] || row["Average"] || 0);
+      const average = Number(row["AVR. SCORE"] || row["Average"] || 0);
 
-        const medal = row["PLACE"] || row["Medal"] || getMedal(average);
+      const medal = row["PLACE"] || row["Medal"] || getMedal(average);
 
-        const hasScore = kata1Marks > 0 || kata2Marks > 0 || kata3Marks > 0;
+      const hasScore = kata1Marks > 0 || kata2Marks > 0 || kata3Marks > 0;
 
-        // Create registration
-        const registration = await tx.registration.create({
+      // Create registration
+      const registration = await prisma.registration.create({
+        data: {
+          studentName,
+          age,
+          branch,
+          belt,
+          phone,
+          parentPhone,
+          kata1,
+          kata2,
+          kata3,
+          extraData,
+          testCompleted: hasScore,
+        },
+      });
+
+      // Create score if available
+      if (hasScore) {
+        await prisma.kataScore.create({
           data: {
-            studentName,
-            age,
-            branch,
-            belt,
-            phone,
-            parentPhone,
-            kata1,
-            kata2,
-            kata3,
-            extraData,
-            testCompleted: hasScore,
+            registrationId: registration.id,
+            kata1Name: kata1 || "",
+            kata2Name: kata2 || "",
+            kata3Name: kata3 || "",
+            kata1Marks,
+            kata2Marks,
+            kata3Marks,
+            average,
+            medal,
           },
         });
-
-        // Create kata score if already tested
-        if (hasScore) {
-          await tx.kataScore.create({
-            data: {
-              registrationId: registration.id,
-              kata1Name: kata1 || "",
-              kata2Name: kata2 || "",
-              kata3Name: kata3 || "",
-              kata1Marks,
-              kata2Marks,
-              kata3Marks,
-              average,
-              medal,
-            },
-          });
-        }
-
-        imported++;
       }
-    });
+
+      imported++;
+    }
     return res.status(HTTP_STATUS.OK).json(
       new ApiResponse(
         HTTP_STATUS.OK,
