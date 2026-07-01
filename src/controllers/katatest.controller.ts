@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { HTTP_STATUS } from "../utils/constants";
 import { asyncHandler } from "../utils/asyncHandler";
+import { getRequiredKataCount } from "../utils/kata-count";
 
 const ALLOWED_EXCEL_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -610,11 +611,36 @@ export const getRegistrationById = asyncHandler(async (req, res) => {
 
 // update regi students
 export const updateregisterdStudent = asyncHandler(async (req, res) => {
+  const existing = await prisma.registration.findUnique({
+    where: {
+      id: req.params.id,
+    },
+  });
+
+  if (!existing) {
+    throw new ApiError(404, "Registration not found");
+  }
+
+  const requiredKataCount = getRequiredKataCount(
+    req.body.belt ?? existing.belt,
+  );
+  const normalizedKatas = [
+    req.body.kata1 ?? existing.kata1 ?? null,
+    req.body.kata2 ?? existing.kata2 ?? null,
+    req.body.kata3 ?? existing.kata3 ?? null,
+  ].slice(0, requiredKataCount);
+
   const registrtaion = await prisma.registration.update({
     where: {
       id: req.params.id,
     },
-    data: req.body,
+    data: {
+      ...req.body,
+      age: req.body.age ? Number(req.body.age) : existing.age,
+      kata1: normalizedKatas[0] ?? null,
+      kata2: normalizedKatas[1] ?? null,
+      kata3: normalizedKatas[2] ?? null,
+    },
   });
 
   return res
@@ -643,10 +669,20 @@ export const createRegistration = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Student name, age, branch and belt are required");
   }
 
+  const requiredKataCount = getRequiredKataCount(belt);
+  const normalizedKatas = [
+    req.body.kata1,
+    req.body.kata2,
+    req.body.kata3,
+  ].slice(0, requiredKataCount);
+
   const registration = await prisma.registration.create({
     data: {
       ...req.body,
       age: Number(age),
+      kata1: normalizedKatas[0] ?? null,
+      kata2: normalizedKatas[1] ?? null,
+      kata3: normalizedKatas[2] ?? null,
     },
   });
 

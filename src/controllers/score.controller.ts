@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { HTTP_STATUS } from "../utils/constants";
 import { asyncHandler } from "../utils/asyncHandler";
+import { getRequiredKataCount } from "../utils/kata-count";
 
 function getMedal(average: number) {
   if (average > 7) return "Gold";
@@ -35,8 +36,15 @@ export const saveScore = asyncHandler(
       throw new ApiError(HTTP_STATUS.NOT_FOUND, "Registration not found");
     }
 
-    const average =
-      (Number(kata1Marks) + Number(kata2Marks) + Number(kata3Marks)) / 3;
+    const requiredKataCount = getRequiredKataCount(registration.belt);
+    const markValues = [
+      Number(kata1Marks),
+      Number(kata2Marks),
+      Number(kata3Marks),
+    ].slice(0, requiredKataCount);
+    const average = markValues.some((mark) => Number.isNaN(mark))
+      ? 0
+      : markValues.reduce((sum, mark) => sum + mark, 0) / requiredKataCount;
 
     const medal = getMedal(average);
 
